@@ -45,7 +45,7 @@ export function ProjectsView() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <h1 className="font-serif text-4xl text-ink-700 mb-1">Fable</h1>
+            <h1 className="font-serif text-4xl text-ink-700 mb-1">Storyfolio</h1>
             <p className="font-sans text-sm text-ink-500/60">
               {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </p>

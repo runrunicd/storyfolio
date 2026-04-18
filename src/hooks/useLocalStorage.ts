@@ -15,7 +15,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
       setStoredValue(value)
       localStorage.setItem(key, JSON.stringify(value))
     } catch (err) {
-      console.warn('[fable] useLocalStorage write error:', err)
+      console.warn('[storyfolio] useLocalStorage write error:', err)
     }
   }
 

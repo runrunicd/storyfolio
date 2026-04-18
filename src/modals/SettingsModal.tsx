@@ -78,7 +78,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {/* About */}
         <section>
-          <h3 className="font-serif text-base text-ink-700 mb-1">About Fable</h3>
+          <h3 className="font-serif text-base text-ink-700 mb-1">About Storyfolio</h3>
           <p className="font-sans text-xs text-ink-500/60 leading-relaxed">
             A quiet workspace for picture book author-illustrators. Version 0.1.0.
           </p>

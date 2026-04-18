@@ -6,7 +6,7 @@ export function safeSetItem(key: string, value: string): { ok: boolean; error?: 
     return { ok: true }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown storage error'
-    console.warn(`[fable] localStorage quota exceeded for key "${key}":`, msg)
+    console.warn(`[storyfolio] localStorage quota exceeded for key "${key}":`, msg)
     return { ok: false, error: msg }
   }
 }
