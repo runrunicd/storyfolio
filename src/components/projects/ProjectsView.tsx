@@ -3,19 +3,19 @@ import { useProjectStore, useAppStore } from '@/store'
 import type { Project } from '@/types'
 
 // ─── Book-spine palette ──────────────────────────────────────────
-// Book-cloth colors inspired by real publisher bindings. Spine picks one
-// deterministically from the project's id so a book keeps the same color
-// across sessions.
+// Soft, warm picture-book colors — like children's-book covers on a
+// nursery shelf. Spine picks one deterministically from the project's id
+// so a book keeps the same color across sessions.
 const SPINE_PALETTE: { body: string; cap: string; text: string }[] = [
-  { body: '#6E8FA8', cap: '#D9B679', text: '#F6EFDE' }, // dusty blue + gold
-  { body: '#8E5C41', cap: '#E2C074', text: '#F6EFDE' }, // warm rust + ochre
-  { body: '#7A8C6E', cap: '#D9B679', text: '#F6EFDE' }, // moss + gold
-  { body: '#C8913A', cap: '#5C4629', text: '#FAF7F2' }, // ochre + brown
-  { body: '#2C3A5C', cap: '#C8913A', text: '#F6EFDE' }, // midnight + ochre
-  { body: '#A67B4F', cap: '#E8DFC8', text: '#FAF7F2' }, // cardboard + cream
-  { body: '#8B5A4A', cap: '#D4A096', text: '#FAF7F2' }, // rust + rose
-  { body: '#4D6A5A', cap: '#D9B679', text: '#F6EFDE' }, // pine + gold
-  { body: '#5C6E8A', cap: '#E2C074', text: '#F6EFDE' }, // slate + gold
+  { body: '#EFC4A5', cap: '#F6EAD6', text: '#6B4A32' }, // soft peach + cream
+  { body: '#B8C8A8', cap: '#F6EAD6', text: '#4A5A40' }, // sage + cream
+  { body: '#E8B8A0', cap: '#F6EAD6', text: '#6B4238' }, // dusty rose + cream
+  { body: '#E8C878', cap: '#F6EAD6', text: '#6B5020' }, // butter honey + cream
+  { body: '#C8B8D0', cap: '#F6EAD6', text: '#4A3E58' }, // lavender + cream
+  { body: '#A8C0CC', cap: '#F6EAD6', text: '#3E5260' }, // dusty sky + cream
+  { body: '#D9B679', cap: '#F6EAD6', text: '#5C4020' }, // ochre + cream
+  { body: '#B0C8B8', cap: '#F6EAD6', text: '#3E5446' }, // mint + cream
+  { body: '#E0A890', cap: '#F6EAD6', text: '#5A2E20' }, // clay + cream
 ]
 
 function paletteFor(id: string) {
@@ -92,44 +92,61 @@ function BookSpine({
         width: w,
         height: h,
         transformOrigin: 'bottom center',
-        transition: 'transform 180ms ease-out, filter 180ms ease-out',
+        transition: 'transform 200ms ease-out, filter 200ms ease-out',
       }}
       onClick={onOpen}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-8px)'
-        e.currentTarget.style.filter = 'drop-shadow(0 12px 18px rgba(74,69,64,0.25))'
+        e.currentTarget.style.filter = 'drop-shadow(0 10px 16px rgba(120,95,60,0.22))'
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.filter = 'drop-shadow(0 3px 5px rgba(74,69,64,0.18))'
+        e.currentTarget.style.filter = 'drop-shadow(0 2px 4px rgba(120,95,60,0.15))'
       }}
-      title={`${project.title}\n${metaFor(project)}`}
     >
+      {/* Hover caption — sits ABOVE the book so the shelf never covers it */}
+      <div
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-center"
+        style={{ bottom: 'calc(100% + 12px)' }}
+      >
+        <div
+          className="text-ink-700 leading-tight"
+          style={{ fontFamily: "'Caveat', cursive", fontSize: 18 }}
+        >
+          {project.title}
+        </div>
+        <div className="text-ink-500/55 text-[11px] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {metaFor(project)}
+        </div>
+      </div>
+
       <svg
         viewBox={`0 0 ${w} ${h}`}
         width={w}
         height={h}
-        style={{ display: 'block', filter: 'drop-shadow(0 3px 5px rgba(74,69,64,0.18))' }}
+        style={{ display: 'block', filter: 'drop-shadow(0 2px 4px rgba(120,95,60,0.15))' }}
       >
-        {/* Spine body */}
-        <rect x="0" y="0" width={w} height={h} fill={palette.body} />
-        {/* Top + bottom caps (book-cloth bands) */}
-        <rect x="0" y="8" width={w} height="14" fill={palette.cap} opacity="0.85" />
-        <rect x="0" y={h - 22} width={w} height="14" fill={palette.cap} opacity="0.85" />
-        {/* Thin gold rules on the bands */}
-        <line x1="4" y1="8" x2={w - 4} y2="8" stroke={palette.cap} strokeWidth="0.5" opacity="0.6" />
-        <line x1="4" y1="22" x2={w - 4} y2="22" stroke={palette.cap} strokeWidth="0.5" opacity="0.6" />
-        <line x1="4" y1={h - 22} x2={w - 4} y2={h - 22} stroke={palette.cap} strokeWidth="0.5" opacity="0.6" />
-        <line x1="4" y1={h - 8} x2={w - 4} y2={h - 8} stroke={palette.cap} strokeWidth="0.5" opacity="0.6" />
-        {/* Subtle vertical inner shadow to give depth */}
-        <rect x="0" y="0" width="3" height={h} fill="rgba(0,0,0,0.2)" />
-        <rect x={w - 3} y="0" width="3" height={h} fill="rgba(255,255,255,0.08)" />
-        {/* Vertical title text, bottom-up (real spine orientation) */}
+        <defs>
+          <linearGradient id={`spine-${project.id}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="rgba(0,0,0,0.14)" />
+            <stop offset="0.12" stopColor="rgba(0,0,0,0)" />
+            <stop offset="0.88" stopColor="rgba(0,0,0,0)" />
+            <stop offset="1" stopColor="rgba(255,255,255,0.12)" />
+          </linearGradient>
+        </defs>
+        {/* Spine body — soft rounded top corner for a picture-book feel */}
+        <rect x="0" y="0" width={w} height={h} rx="3" ry="3" fill={palette.body} />
+        {/* Soft depth gradient */}
+        <rect x="0" y="0" width={w} height={h} rx="3" ry="3" fill={`url(#spine-${project.id})`} />
+        {/* One cream cap at top — a thin ribbon, not leather */}
+        <rect x="2" y="12" width={w - 4} height="2" fill={palette.cap} opacity="0.55" />
+        {/* Vertical title, bottom-up (real spine orientation) */}
         <text
           x={w / 2}
           y={h / 2}
           fontFamily="'Lora', Georgia, serif"
           fontSize={w < 60 ? 13 : 14}
+          fontWeight="500"
           fill={palette.text}
           textAnchor="middle"
           dominantBaseline="middle"
@@ -138,21 +155,9 @@ function BookSpine({
         >
           {displayTitle}
         </text>
-        {/* Tiny maker mark near bottom cap */}
-        <text
-          x={w / 2}
-          y={h - 14}
-          fontFamily="'Caveat', cursive"
-          fontSize="10"
-          fill={palette.cap}
-          textAnchor="middle"
-          opacity="0.85"
-        >
-          ✦
-        </text>
       </svg>
 
-      {/* Delete affordance — appears on hover, top corner */}
+      {/* Delete affordance — appears on hover, top-right corner */}
       <button
         onClick={onRequestDelete}
         className={[
@@ -160,22 +165,12 @@ function BookSpine({
           'font-sans text-[11px] leading-none transition-all',
           isConfirmingDelete
             ? 'bg-red-500 text-white opacity-100 scale-110'
-            : 'bg-cream-100 text-ink-500/50 opacity-0 group-hover:opacity-100 border border-cream-300 shadow-soft hover:text-red-500',
+            : 'bg-cream-100 text-ink-500/45 opacity-0 group-hover:opacity-100 border border-cream-300 shadow-soft hover:text-red-500',
         ].join(' ')}
-        title={isConfirmingDelete ? 'Click again to confirm' : 'Remove from shelf'}
-        aria-label="Delete project"
+        aria-label={isConfirmingDelete ? 'Click again to confirm' : 'Remove from shelf'}
       >
         {isConfirmingDelete ? '✓' : '×'}
       </button>
-
-      {/* Hover caption — meta info */}
-      <div
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ top: h + 8, fontFamily: "'Caveat', cursive" }}
-      >
-        <div className="font-serif text-xs text-ink-700">{project.title}</div>
-        <div className="font-sans text-[10px] text-ink-500/60 mt-0.5 text-center">{metaFor(project)}</div>
-      </div>
     </div>
   )
 }
@@ -185,29 +180,40 @@ function NewBookSlot({ onClick, label }: { onClick: () => void; label: string })
   return (
     <div
       className="group relative cursor-pointer"
-      style={{ width: 58, height: 280, transition: 'transform 180ms ease-out' }}
+      style={{ width: 58, height: 280, transition: 'transform 200ms ease-out' }}
       onClick={onClick}
       onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-6px)')}
       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-      title={label}
     >
+      {/* Label lives ABOVE the slot, same as the book hover captions */}
+      <div
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-center"
+        style={{ bottom: 'calc(100% + 12px)' }}
+      >
+        <div className="text-ink-500/70" style={{ fontFamily: "'Caveat', cursive", fontSize: 16 }}>
+          {label}
+        </div>
+      </div>
       <svg viewBox="0 0 58 280" width="58" height="280" style={{ display: 'block' }}>
         <rect
           x="2"
           y="2"
           width="54"
           height="276"
-          fill="var(--cream-100, #FAF7F2)"
-          stroke="rgba(120,100,60,0.4)"
+          rx="3"
+          ry="3"
+          fill="rgba(250,247,242,0.6)"
+          stroke="rgba(200,145,58,0.35)"
           strokeWidth="1.2"
-          strokeDasharray="4 4"
+          strokeDasharray="5 5"
+          className="group-hover:[stroke:rgba(200,145,58,0.7)]"
         />
         <text
           x="29"
           y="140"
           fontFamily="'Lora', serif"
-          fontSize="24"
-          fill="rgba(120,100,60,0.5)"
+          fontSize="28"
+          fill="rgba(200,145,58,0.55)"
           textAnchor="middle"
           dominantBaseline="middle"
           className="group-hover:[fill:rgba(200,145,58,0.85)]"
@@ -215,12 +221,6 @@ function NewBookSlot({ onClick, label }: { onClick: () => void; label: string })
           +
         </text>
       </svg>
-      <div
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ top: 280 + 8, fontFamily: "'Caveat', cursive" }}
-      >
-        <div className="font-sans text-[11px] text-ink-500/70">{label}</div>
-      </div>
     </div>
   )
 }
@@ -327,26 +327,29 @@ export function ProjectsView() {
 }
 
 // ─── Shelf presentation ─────────────────────────────────────────
+// A soft, honey-colored wooden plank — thin and warm, not a library
+// leather-bound heavy thing. More like a nursery-room shelf.
 function Shelf({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative pt-6">
+    <div className="relative pt-8">
       {/* Books sit on top of the shelf */}
-      <div className="pb-1">{children}</div>
-      {/* The shelf itself — a simple wooden plank with a soft shadow under */}
+      <div className="pb-0">{children}</div>
+      {/* Warm honey wood plank */}
       <div
-        className="h-3 rounded-sm"
+        className="h-2.5 rounded-sm"
         style={{
           background:
-            'linear-gradient(180deg, #A67B4F 0%, #8E5C41 55%, #5C4629 100%)',
+            'linear-gradient(180deg, #E8C890 0%, #D9B079 55%, #B8914F 100%)',
           boxShadow:
-            '0 4px 8px rgba(74,69,64,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
+            '0 3px 6px rgba(120,95,60,0.18), inset 0 1px 0 rgba(255,240,210,0.35)',
         }}
       />
+      {/* Gentle shadow fading away below */}
       <div
-        className="h-1.5 mx-1 rounded-b-sm"
+        className="h-2 mx-2 rounded-b-sm"
         style={{
           background:
-            'linear-gradient(180deg, rgba(92,70,41,0.6) 0%, rgba(92,70,41,0) 100%)',
+            'linear-gradient(180deg, rgba(150,115,65,0.25) 0%, rgba(150,115,65,0) 100%)',
         }}
       />
     </div>
@@ -357,12 +360,12 @@ function Shelf({ children }: { children: React.ReactNode }) {
 function EmptyShelf({ onStart }: { onStart: () => void }) {
   return (
     <div className="relative pt-10 pb-4">
-      <div className="flex items-end justify-center gap-6 mb-6">
+      <div className="flex items-end justify-center gap-6 mb-0">
         {/* A single gently-suggested first book */}
         <div
-          className="relative cursor-pointer"
+          className="relative cursor-pointer group"
           onClick={onStart}
-          style={{ transition: 'transform 200ms ease-out' }}
+          style={{ transition: 'transform 220ms ease-out' }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-8px)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
         >
@@ -372,17 +375,20 @@ function EmptyShelf({ onStart }: { onStart: () => void }) {
               y="2"
               width="58"
               height="284"
-              fill="var(--cream-50, #FDFCFA)"
-              stroke="rgba(120,100,60,0.55)"
+              rx="3"
+              ry="3"
+              fill="rgba(250,247,242,0.7)"
+              stroke="rgba(200,145,58,0.4)"
               strokeWidth="1.4"
               strokeDasharray="5 5"
+              className="group-hover:[stroke:rgba(200,145,58,0.75)]"
             />
             <text
               x="31"
-              y="140"
+              y="135"
               fontFamily="'Lora', serif"
-              fontSize="28"
-              fill="rgba(200,145,58,0.7)"
+              fontSize="30"
+              fill="rgba(200,145,58,0.6)"
               textAnchor="middle"
               dominantBaseline="middle"
             >
@@ -390,10 +396,10 @@ function EmptyShelf({ onStart }: { onStart: () => void }) {
             </text>
             <text
               x="31"
-              y="170"
+              y="168"
               fontFamily="'Caveat', cursive"
-              fontSize="13"
-              fill="rgba(74,69,64,0.5)"
+              fontSize="14"
+              fill="rgba(74,69,64,0.55)"
               textAnchor="middle"
             >
               your first book
@@ -402,33 +408,33 @@ function EmptyShelf({ onStart }: { onStart: () => void }) {
         </div>
       </div>
 
-      {/* The shelf */}
+      {/* The shelf — warm honey wood */}
       <div
-        className="h-3 rounded-sm"
+        className="h-2.5 rounded-sm"
         style={{
           background:
-            'linear-gradient(180deg, #A67B4F 0%, #8E5C41 55%, #5C4629 100%)',
+            'linear-gradient(180deg, #E8C890 0%, #D9B079 55%, #B8914F 100%)',
           boxShadow:
-            '0 4px 8px rgba(74,69,64,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
+            '0 3px 6px rgba(120,95,60,0.18), inset 0 1px 0 rgba(255,240,210,0.35)',
         }}
       />
       <div
-        className="h-1.5 mx-1 rounded-b-sm"
+        className="h-2 mx-2 rounded-b-sm"
         style={{
           background:
-            'linear-gradient(180deg, rgba(92,70,41,0.6) 0%, rgba(92,70,41,0) 100%)',
+            'linear-gradient(180deg, rgba(150,115,65,0.25) 0%, rgba(150,115,65,0) 100%)',
         }}
       />
 
       {/* Handwritten invitation */}
-      <div className="text-center mt-14">
+      <div className="text-center mt-16">
         <p
-          className="text-ink-700 text-2xl mb-3"
-          style={{ fontFamily: "'Caveat', cursive" }}
+          className="text-ink-700 mb-3"
+          style={{ fontFamily: "'Caveat', cursive", fontSize: 32, lineHeight: 1 }}
         >
           start your first book
         </p>
-        <p className="font-sans text-sm text-ink-500/60 mb-6 max-w-md mx-auto">
+        <p className="font-sans text-sm text-ink-500/60 mb-7 max-w-md mx-auto leading-relaxed">
           One rough idea. Ten or sixteen spreads. A finished dummy you can send to an editor.
         </p>
         <button
