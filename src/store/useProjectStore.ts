@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { idbStorage } from '@/lib/idbStorage'
 import { v4 as uuidv4 } from 'uuid'
-import { SAMPLE_PROJECT, createNewProject, makeEmptySpread } from '@/lib/constants'
+import { createNewProject, makeEmptySpread } from '@/lib/constants'
 import type { SpreadSuggestion } from '@/lib/manuscriptAnalyzer'
 import type {
   AIChatMessage,
@@ -34,12 +34,25 @@ function relabelFlow(spreads: StorySpread[]): StorySpread[] {
 interface ProjectStore {
   projects: Project[]
   activeProjectId: string | null
+  /**
+   * One-shot flag so we only run the "remove the old bundled sample
+   * project" cleanup once per install. Set to true after the first run.
+   */
+  sampleProjectRemoved?: boolean
 
   // Project management
   addProject: (title?: string) => string         // returns new project id
   duplicateProject: (id: string) => void
   deleteProject: (id: string) => void
   setActiveProject: (id: string | null) => void
+  /**
+   * Remove the seeded "Wren and the Owl" sample project that shipped
+   * before we decided first-time users should land on an empty shelf.
+   * Identified by title + the seed's roughIdeas prefix so we don't
+   * nuke a legitimate project that happens to share the title.
+   * Idempotent — only runs once per install.
+   */
+  removeBundledSample: () => void
 
   // Active project — title (cascades to cover spread)
   updateTitle: (title: string) => void
@@ -98,14 +111,27 @@ function patchActive(
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set, get) => ({
-      projects: [SAMPLE_PROJECT],
+      projects: [],
       activeProjectId: null,
+      sampleProjectRemoved: false,
 
       // ── Project management ────────────────────────────────────
       addProject: (title = 'Untitled Story') => {
         const project = createNewProject(title)
         set((s) => ({ projects: [...s.projects, project] }))
         return project.id
+      },
+
+      removeBundledSample: () => {
+        const s = get()
+        if (s.sampleProjectRemoved) return
+        const WREN_PREFIX = 'A small wren bird receives'
+        set({
+          projects: s.projects.filter(
+            (p) => !(p.title === 'Wren and the Owl' && p.roughIdeas.startsWith(WREN_PREFIX)),
+          ),
+          sampleProjectRemoved: true,
+        })
       },
 
       duplicateProject: (id) => {

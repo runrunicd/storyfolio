@@ -28,12 +28,14 @@ export function AppShell() {
     }
   }, [hydrated])
 
-  // One-time migration: fold legacy per-spread `aiMessages[]` into the
-  // Partner thread now that the Story view no longer has an inline chat.
-  // `migrateSpreadChatsFor` is idempotent — it no-ops on projects it's
-  // already processed — so running this on every hydration is safe.
+  // One-time migrations after hydration:
+  //   1. Remove the old bundled "Wren and the Owl" sample project
+  //      (idempotent — guarded by `sampleProjectRemoved` flag).
+  //   2. Fold legacy per-spread `aiMessages[]` into the Partner thread
+  //      now that Story view no longer has inline chat (also idempotent).
   useEffect(() => {
     if (!hydrated) return
+    useProjectStore.getState().removeBundledSample()
     const projects = useProjectStore.getState().projects
     const migrate  = usePartnerStore.getState().migrateSpreadChatsFor
     for (const project of projects) {
