@@ -278,7 +278,17 @@ export function ProjectsView() {
       <div className="px-10 pt-10 pb-6 max-w-6xl mx-auto">
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="font-serif text-4xl text-ink-700 mb-1 leading-tight">Storyfolio</h1>
+            <h1
+              className="text-ink-700 mb-1 leading-none"
+              style={{
+                fontFamily: "'Caveat', 'Lora', cursive",
+                fontWeight: 700,
+                fontSize: '3.5rem',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Storyfolio
+            </h1>
             <p className="font-sans text-sm text-ink-500/60">
               {hasBooks
                 ? `${sorted.length} ${sorted.length === 1 ? 'book' : 'books'} on your shelf`
