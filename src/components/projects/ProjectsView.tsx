@@ -4,19 +4,21 @@ import { NewBookModal } from '@/modals/NewBookModal'
 import type { Project } from '@/types'
 
 // ─── Book-spine palette ──────────────────────────────────────────
-// Soft, warm picture-book colors — like children's-book covers on a
-// nursery shelf. Spine picks one deterministically from the project's id
-// so a book keeps the same color across sessions.
+// Ghibli-warm picture-book palette: sophisticated but warm. Oliver
+// Jeffers + Tokyo bookshop territory — navy and terracotta beside
+// matcha and coral, all caps a warm cream ribbon. Spine picks one
+// deterministically from the project's id so a book keeps the same
+// color across sessions.
 const SPINE_PALETTE: { body: string; cap: string; text: string }[] = [
-  { body: '#EFC4A5', cap: '#F6EAD6', text: '#6B4A32' }, // soft peach + cream
-  { body: '#B8C8A8', cap: '#F6EAD6', text: '#4A5A40' }, // sage + cream
-  { body: '#E8B8A0', cap: '#F6EAD6', text: '#6B4238' }, // dusty rose + cream
-  { body: '#E8C878', cap: '#F6EAD6', text: '#6B5020' }, // butter honey + cream
-  { body: '#C8B8D0', cap: '#F6EAD6', text: '#4A3E58' }, // lavender + cream
-  { body: '#A8C0CC', cap: '#F6EAD6', text: '#3E5260' }, // dusty sky + cream
-  { body: '#D9B679', cap: '#F6EAD6', text: '#5C4020' }, // ochre + cream
-  { body: '#B0C8B8', cap: '#F6EAD6', text: '#3E5446' }, // mint + cream
-  { body: '#E0A890', cap: '#F6EAD6', text: '#5A2E20' }, // clay + cream
+  { body: '#D98571', cap: '#F2E4C0', text: '#5A2E20' }, // soft coral
+  { body: '#9AA977', cap: '#F2E4C0', text: '#3E4A2E' }, // matcha green
+  { body: '#E8D4A8', cap: '#C9A36B', text: '#5C4020' }, // cream sand (cap slightly darker for contrast)
+  { body: '#3A4F73', cap: '#F2E4C0', text: '#E8D4A8' }, // deep navy
+  { body: '#C67B5F', cap: '#F2E4C0', text: '#4A2820' }, // terracotta
+  { body: '#85A097', cap: '#F2E4C0', text: '#2E4238' }, // dusty teal
+  { body: '#D4A04A', cap: '#F2E4C0', text: '#4A3020' }, // mustard
+  { body: '#A95743', cap: '#F2E4C0', text: '#F2E4C0' }, // warm brick
+  { body: '#8A6B78', cap: '#F2E4C0', text: '#F2E4C0' }, // muted plum
 ]
 
 function paletteFor(id: string) {
@@ -273,7 +275,7 @@ export function ProjectsView() {
   const hasBooks = sorted.length > 0
 
   return (
-    <div className="min-h-screen bg-cream-100">
+    <div className="min-h-screen" style={{ backgroundColor: '#F0E9D6' }}>
       {/* Header */}
       <div className="px-10 pt-10 pb-6 max-w-6xl mx-auto">
         <div className="flex items-end justify-between">
@@ -412,10 +414,11 @@ function Shelf({ children }: { children: React.ReactNode }) {
       <div
         className="h-2.5 rounded-sm"
         style={{
+          // Medium oak, Ghibli bookshop
           background:
-            'linear-gradient(180deg, #E8C890 0%, #D9B079 55%, #B8914F 100%)',
+            'linear-gradient(180deg, #C9A36B 0%, #AE8648 55%, #8F6B3A 100%)',
           boxShadow:
-            '0 3px 6px rgba(120,95,60,0.18), inset 0 1px 0 rgba(255,240,210,0.35)',
+            '0 3px 6px rgba(100,75,40,0.22), inset 0 1px 0 rgba(255,235,200,0.30)',
         }}
       />
       {/* Gentle shadow fading away below */}
@@ -423,7 +426,7 @@ function Shelf({ children }: { children: React.ReactNode }) {
         className="h-2 mx-2 rounded-b-sm"
         style={{
           background:
-            'linear-gradient(180deg, rgba(150,115,65,0.25) 0%, rgba(150,115,65,0) 100%)',
+            'linear-gradient(180deg, rgba(110,80,40,0.30) 0%, rgba(110,80,40,0) 100%)',
         }}
       />
     </div>
@@ -486,17 +489,18 @@ function EmptyShelf({ onStart }: { onStart: () => void }) {
       <div
         className="h-2.5 rounded-sm"
         style={{
+          // Medium oak, Ghibli bookshop
           background:
-            'linear-gradient(180deg, #E8C890 0%, #D9B079 55%, #B8914F 100%)',
+            'linear-gradient(180deg, #C9A36B 0%, #AE8648 55%, #8F6B3A 100%)',
           boxShadow:
-            '0 3px 6px rgba(120,95,60,0.18), inset 0 1px 0 rgba(255,240,210,0.35)',
+            '0 3px 6px rgba(100,75,40,0.22), inset 0 1px 0 rgba(255,235,200,0.30)',
         }}
       />
       <div
         className="h-2 mx-2 rounded-b-sm"
         style={{
           background:
-            'linear-gradient(180deg, rgba(150,115,65,0.25) 0%, rgba(150,115,65,0) 100%)',
+            'linear-gradient(180deg, rgba(110,80,40,0.30) 0%, rgba(110,80,40,0) 100%)',
         }}
       />
 
