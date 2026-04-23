@@ -17,6 +17,7 @@
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #E2D9CC transparent;
+    /* Ghibli-warm cream-300 to match the rest of the palette. */
+    scrollbar-color: #D6C7A5 transparent;
   }
 }

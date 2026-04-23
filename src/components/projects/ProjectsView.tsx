@@ -275,7 +275,7 @@ export function ProjectsView() {
   const hasBooks = sorted.length > 0
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F0E9D6' }}>
+    <div className="min-h-screen bg-cream-100">
       {/* Header */}
       <div className="px-10 pt-10 pb-6 max-w-6xl mx-auto">
         <div className="flex items-end justify-between">

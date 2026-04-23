@@ -5,12 +5,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Ghibli-warm cream scale — wheat-paper rather than pale ivory.
+        // Hue sits around 40° (warm tan) across the scale so each step
+        // reads as the same paper, just darker.
         cream: {
-          50:  '#FDFCFA',
-          100: '#FAF7F2',
-          200: '#F0EBE1',
-          300: '#E2D9CC',
-          400: '#C8B99A',
+          50:  '#FBF6E6',
+          100: '#F0E9D6',
+          200: '#E8DFC6',
+          300: '#D6C7A5',
+          400: '#B89C6F',
         },
         ochre: {
           400: '#D4A54A',
