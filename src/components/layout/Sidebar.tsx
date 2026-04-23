@@ -13,12 +13,18 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'publish', label: 'Publish', icon: '◎' },
 ]
 
+// Partner tab is opt-in: only visible once AI is enabled in Settings.
+const PARTNER_NAV_ITEM: NavItem = { id: 'partner', label: 'Partner', icon: '✧' }
+
 export function Sidebar() {
   const activeView = useAppStore((s) => s.activeView)
   const setActiveView = useAppStore((s) => s.setActiveView)
   const setActiveProjectId = useAppStore((s) => s.setActiveProjectId)
   const openSettings = useAppStore((s) => s.openSettings)
+  const aiEnabled = useAppStore((s) => s.settings.aiEnabled)
   const project = useActiveProject()
+
+  const navItems: NavItem[] = aiEnabled ? [...NAV_ITEMS, PARTNER_NAV_ITEM] : NAV_ITEMS
 
   const goHome = () => {
     useProjectStore.getState().setActiveProject(null)
@@ -50,7 +56,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-col items-center gap-1 flex-1">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveView(item.id)}
