@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useAppStore, useProjectStore } from '@/store'
+import { useAppStore, useProjectStore, usePartnerStore } from '@/store'
 import { Sidebar } from './Sidebar'
 import { ProjectsView } from '@/components/projects/ProjectsView'
 import { StoryView } from '@/components/story/StoryView'
 import { DrawView } from '@/components/draw/DrawView'
 import { PublishView } from '@/components/publish/PublishView'
+import { PartnerView } from '@/components/partner/PartnerView'
 import { SettingsModal } from '@/modals/SettingsModal'
 import type { ViewId } from '@/types'
 import type { ComponentType } from 'react'
@@ -13,6 +14,7 @@ const viewMap: Record<ViewId, ComponentType> = {
   dream:   StoryView,
   draw:    DrawView,
   publish: PublishView,
+  partner: PartnerView,
 }
 
 export function AppShell() {
@@ -26,10 +28,28 @@ export function AppShell() {
     }
   }, [hydrated])
 
+  // One-time migration: fold legacy per-spread `aiMessages[]` into the
+  // Partner thread now that the Story view no longer has an inline chat.
+  // `migrateSpreadChatsFor` is idempotent — it no-ops on projects it's
+  // already processed — so running this on every hydration is safe.
+  useEffect(() => {
+    if (!hydrated) return
+    const projects = useProjectStore.getState().projects
+    const migrate  = usePartnerStore.getState().migrateSpreadChatsFor
+    for (const project of projects) {
+      migrate(project)
+    }
+  }, [hydrated])
+
   const activeView = useAppStore((s) => s.activeView)
+  const aiEnabled = useAppStore((s) => s.settings.aiEnabled)
   const isSettingsOpen = useAppStore((s) => s.isSettingsOpen)
   const closeSettings = useAppStore((s) => s.closeSettings)
   const activeProjectId = useProjectStore((s) => s.activeProjectId)
+
+  // Guard: if the user had Partner selected and then disabled AI, fall back to Story.
+  const effectiveView: ViewId =
+    activeView === 'partner' && !aiEnabled ? 'dream' : activeView
 
   if (!hydrated) {
     return (
@@ -39,7 +59,7 @@ export function AppShell() {
     )
   }
 
-  const ActiveView = viewMap[activeView]
+  const ActiveView = viewMap[effectiveView]
 
   return (
     <div className="flex h-screen overflow-hidden bg-cream-100">

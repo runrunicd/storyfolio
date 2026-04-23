@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { useProjectStore, useAppStore, useActiveProject } from '@/store'
+import { useProjectStore, useActiveProject } from '@/store'
 import { useInspectorStore } from '@/store'
 import { useImageUpload } from '@/hooks/useImageUpload'
-import { sendSpreadMessage, probeSpread } from '@/lib/storyAssistant'
 import { buildScenePrompt } from '@/lib/promptBuilder'
 import type { SpreadSketch, StorySpread } from '@/types'
 
@@ -117,17 +116,6 @@ function SketchLightbox({
   )
 }
 
-// ─── Quick actions for the chat ──────────────────────────────────
-
-const QUICK_ACTIONS = [
-  { label: 'Brainstorm',  prompt: 'Help me brainstorm what could happen in this spread. What moments would serve the story here?' },
-  { label: 'Write text',  prompt: 'Write manuscript text for this spread based on the context and art notes.' },
-  { label: 'Art notes',   prompt: 'Suggest detailed art direction for this spread — characters, scene, mood, composition.' },
-  { label: 'Feedback',    prompt: "Give me honest feedback on this spread. What's working? What could be stronger?" },
-  { label: 'Lock this down', prompt: "Help me finalise this spread. Review everything — story beat, manuscript text, art notes — and tell me: is this spread ready to lock? What, if anything, still needs to be resolved before I move on?" },
-  { label: 'Ask me something', prompt: 'Ask me a thought-provoking question about this spread to help me think deeper.' },
-]
-
 // ─── Main SpreadEditPanel ─────────────────────────────────────────
 
 interface SpreadEditPanelProps {
@@ -138,7 +126,7 @@ interface SpreadEditPanelProps {
 }
 
 export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPanelProps) {
-  const { updateSpread, updateArtNotes, toggleSpreadLock, addSketch, removeSketch, renameSketch, addAiMessage, clearAiMessages } =
+  const { updateSpread, updateArtNotes, toggleSpreadLock, addSketch, removeSketch, renameSketch } =
     useProjectStore()
 
   const sketches = spread.sketches ?? []
@@ -150,20 +138,11 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
   // Lightbox
   const [expandedSketchIdx, setExpandedSketchIdx] = useState<number | null>(null)
 
-  // AI chat state
-  const [chatInput, setChatInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [probing, setProbing] = useState(false)
-  const messagesRef = useRef<HTMLDivElement>(null)
-
   // MJ prompt copy + local draft (editable override)
   const [mjCopied, setMjCopied] = useState(false)
   const [promptDraft, setPromptDraft] = useState<string | null>(null)
 
   const project = useActiveProject()
-  const apiKey = useAppStore((s) => s.settings.claudeApiKey)
-  const openSettings = useAppStore((s) => s.openSettings)
   const colorSwatches = useInspectorStore((s) => s.colorSwatches)
   const moodKeywords = useInspectorStore((s) => s.moodKeywords)
   const illustrationStyle = useInspectorStore((s) => s.illustrationStyle)
@@ -174,8 +153,6 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
   useEffect(() => {
     setExpandedSketchIdx(null)
     setActiveSketchIdx(Math.max(0, (spread.sketches ?? []).length - 1))
-    setChatInput('')
-    setError(null)
     setPromptDraft(null)
   }, [spread.id])
 
@@ -187,54 +164,6 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
     el.style.height = el.scrollHeight + 'px'
   }, [spread.manuscriptText])
 
-  // Scroll chat to bottom when messages change
-  useEffect(() => {
-    const el = messagesRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [spread.aiMessages.length, loading, probing, error])
-
-  // Proactive probe: when navigating to a spread with content but no conversation yet
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!apiKey) return
-    if (spread.aiMessages.length > 0) return
-
-    const hasContent =
-      spread.manuscriptText.trim() ||
-      spread.artNotes.characters.trim() ||
-      spread.artNotes.scene.trim() ||
-      spread.artNotes.designNotes.trim() ||
-      spread.artNotes.keyWords.trim() ||
-      (spread.sketches ?? []).length > 0
-
-    if (!hasContent) return
-
-    setProbing(true)
-    const arcForProbe = (project?.storyFlow ?? [])
-      .filter((s) => s.plotBeat?.trim())
-      .map((s) => `${s.pageLabel}: ${s.plotBeat}`)
-      .join('\n') || undefined
-    probeSpread({
-      apiKey,
-      projectTitle: project?.title ?? '',
-      roughIdeas: project?.roughIdeas ?? '',
-      storyArc: arcForProbe,
-      spreadNumber: spread.spreadNumber,
-      pageLabel: spread.pageLabel,
-      plotBeat: spread.plotBeat || undefined,
-      manuscriptText: spread.manuscriptText,
-      artNotes: spread.artNotes,
-      hasSketches: (spread.sketches ?? []).length > 0,
-    })
-      .then((reply) => {
-        addAiMessage(spread.id, { role: 'assistant', content: reply })
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Something went wrong.')
-      })
-      .finally(() => setProbing(false))
-  }, [spread.id]) // intentionally only runs on spread change
-
   const clampedIdx = Math.min(activeSketchIdx, Math.max(0, sketches.length - 1))
   const activeSk = sketches[clampedIdx] ?? null
 
@@ -245,16 +174,11 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
       setActiveSketchIdx(sketches.length)
     })
 
-  // ── Story arc + adjacent beats ────────────────────────────────
+  // ── Adjacent beats ────────────────────────────────────────────
   const storyFlow = project?.storyFlow ?? []
   const spreadIdx = storyFlow.findIndex((s) => s.id === spread.id)
   const prevSpread = spreadIdx > 0 ? storyFlow[spreadIdx - 1] : null
   const nextSpread = spreadIdx < storyFlow.length - 1 ? storyFlow[spreadIdx + 1] : null
-
-  const storyArc = storyFlow
-    .filter((s) => s.plotBeat?.trim())
-    .map((s) => `${s.pageLabel}: ${s.plotBeat}`)
-    .join('\n') || undefined
 
   // ── MJ Prompt ─────────────────────────────────────────────────
   const mjPrompt = buildScenePrompt({
@@ -272,39 +196,6 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
     navigator.clipboard.writeText(displayedPrompt)
     setMjCopied(true)
     setTimeout(() => setMjCopied(false), 2000)
-  }
-
-  // ── AI send ───────────────────────────────────────────────────
-  const send = async (message: string) => {
-    if (!message.trim() || loading || probing) return
-    if (!apiKey) { openSettings(); return }
-
-    const historySnapshot = [...spread.aiMessages]
-    setChatInput('')
-    setError(null)
-    addAiMessage(spread.id, { role: 'user', content: message })
-    setLoading(true)
-
-    try {
-      const reply = await sendSpreadMessage({
-        apiKey,
-        projectTitle: project?.title ?? '',
-        roughIdeas: project?.roughIdeas ?? '',
-        storyArc,
-        spreadNumber: spread.spreadNumber,
-        pageLabel: spread.pageLabel,
-        plotBeat: spread.plotBeat || undefined,
-        manuscriptText: spread.manuscriptText,
-        artNotes: spread.artNotes,
-        history: historySnapshot,
-        userMessage: message,
-      })
-      addAiMessage(spread.id, { role: 'assistant', content: reply })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
-    } finally {
-      setLoading(false)
-    }
   }
 
   return (
@@ -345,11 +236,9 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
         </div>
       </div>
 
-      {/* Body: 2-column */}
-      <div className="flex-1 overflow-hidden flex min-h-0">
-
-        {/* ── LEFT: Author's canvas ─────────────────────────── */}
-        <div className="w-[44%] shrink-0 border-r border-cream-300 overflow-y-auto scrollbar-thin px-5 py-5 flex flex-col gap-5">
+      {/* Body: author's canvas (full-width) */}
+      <div className="flex-1 overflow-hidden flex min-h-0 justify-center">
+        <div className="w-full max-w-3xl overflow-y-auto scrollbar-thin px-6 py-6 flex flex-col gap-5">
           <input {...sketchInputProps} />
 
           {/* Story beat */}
@@ -555,112 +444,6 @@ export function SpreadEditPanel({ spread, onBack, onPrev, onNext }: SpreadEditPa
           </div>
         </div>
 
-        {/* ── RIGHT: AI co-creator ──────────────────────────── */}
-        <div className="flex-1 flex flex-col h-full min-w-0">
-
-          {/* Chat header */}
-          <div className="shrink-0 px-5 py-3 border-b border-cream-300 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-moss-500">✦</span>
-              <span className="font-sans text-xs font-medium text-ink-500">AI Co-creator</span>
-              {spread.aiMessages.length > 0 && (
-                <span className="text-[10px] font-sans bg-moss-500/15 text-moss-600 px-1.5 py-0.5 rounded-full">
-                  {spread.aiMessages.length}
-                </span>
-              )}
-            </div>
-            {spread.aiMessages.length > 0 && (
-              <button
-                onClick={() => clearAiMessages(spread.id)}
-                className="font-sans text-[10px] text-ink-500/30 hover:text-red-500 transition-colors"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Messages */}
-          <div ref={messagesRef} className="flex-1 overflow-y-auto scrollbar-thin px-5 py-4 flex flex-col gap-3">
-
-            {!apiKey && (
-              <p className="text-xs font-sans text-ink-500/60 bg-cream-300/50 rounded-xl px-3 py-2">
-                <button onClick={openSettings} className="text-ochre-500 underline hover:text-ochre-600">
-                  Add your Claude API key
-                </button>{' '}
-                in Settings to enable the AI co-creator.
-              </p>
-            )}
-
-            {spread.aiMessages.length === 0 && !probing && (
-              <p className="font-sans text-xs text-ink-500/30 text-center py-6 leading-relaxed">
-                {apiKey
-                  ? 'Add manuscript text or art notes and I\'ll join in with a question.'
-                  : 'Add your API key to get started.'}
-              </p>
-            )}
-
-            {spread.aiMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={[
-                  'rounded-xl px-3 py-2.5 font-sans text-sm leading-relaxed',
-                  msg.role === 'user'
-                    ? 'bg-ochre-500/10 text-ink-700 ml-8'
-                    : 'bg-cream-100 border border-cream-300 text-ink-600 mr-8 whitespace-pre-wrap',
-                ].join(' ')}
-              >
-                {msg.content}
-              </div>
-            ))}
-
-            {(loading || probing) && (
-              <div className="bg-cream-100 border border-cream-300 rounded-xl px-3 py-2.5 mr-8">
-                <span className="inline-flex gap-1 items-center text-ink-500/50 text-xs font-sans">
-                  <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:300ms]" />
-                </span>
-              </div>
-            )}
-
-            {error && (
-              <p className="text-xs font-sans text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>
-            )}
-          </div>
-
-          {/* Quick actions */}
-          <div className="shrink-0 border-t border-cream-300 px-4 pt-2.5 pb-2 flex flex-wrap gap-1.5">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => send(action.prompt)}
-                disabled={loading || probing || !apiKey}
-                className="text-xs font-sans px-2.5 py-1 rounded-full bg-cream-100 border border-cream-300 text-ink-500 hover:bg-ochre-500/10 hover:border-ochre-400 hover:text-ochre-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Input row */}
-          <div className="shrink-0 px-4 pb-4 pt-2 flex gap-2">
-            <input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(chatInput) } }}
-              placeholder="Ask anything about this spread…"
-              disabled={loading || probing || !apiKey}
-              className="flex-1 font-sans text-sm bg-cream-50 border border-cream-300 rounded-xl px-3 py-2 text-ink-700 placeholder:text-ink-500/30 focus:outline-none focus:ring-2 focus:ring-ochre-400/50 focus:border-ochre-400 disabled:opacity-50 transition-colors"
-            />
-            <button
-              onClick={() => send(chatInput)}
-              disabled={!chatInput.trim() || loading || probing || !apiKey}
-              className="px-4 py-2 bg-ochre-500 text-white text-sm font-sans rounded-xl hover:bg-ochre-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-            >
-              →
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Lightbox */}

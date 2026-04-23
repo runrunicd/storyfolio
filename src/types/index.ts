@@ -1,4 +1,4 @@
-export type ViewId = 'dream' | 'draw' | 'publish'
+export type ViewId = 'dream' | 'draw' | 'publish' | 'partner'
 
 export type SpreadTemplate = 'full-bleed' | 'half-half' | 'inset-panel'
 
@@ -24,6 +24,43 @@ export interface AIChatMessage {
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+}
+
+// ─── Creative Partner ────────────────────────────────────────────
+//
+// Project-level conversation between the user and their Creative Partner.
+// Lives in usePartnerStore, keyed by projectId, persisted to IndexedDB.
+// Travels with the project; exportable as Markdown.
+
+export interface PartnerMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+  /** True while the assistant message is mid-stream. */
+  streaming?: boolean
+  /** Set if the stream errored before finishing. */
+  error?: string
+  /**
+   * Marks a user turn that includes the storyboard sketches as image context.
+   * The images themselves are NOT persisted on the message — they're re-
+   * attached from the project's storyFlow at send-time to keep IDB small.
+   * The thread renders these messages as a distinct "shared storyboard" pill.
+   */
+  sharedStoryboard?: boolean
+  /**
+   * Snapshot of how many spreads were shared at the time of the click.
+   * Shown in the thread pill; recorded so the UI stays accurate even if the
+   * project's storyboard grows later.
+   */
+  sharedSpreadCount?: number
+}
+
+export interface PartnerThread {
+  projectId: string
+  messages: PartnerMessage[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface SpreadSketch {
@@ -153,8 +190,21 @@ export interface MoodKeyword {
 
 // ─── Settings ────────────────────────────────────────────────────
 
+export type AIProviderId = 'gemini' | 'anthropic' | 'openai' | 'kimi'
+
 export interface AppSettings {
+  /** Legacy Claude key kept for backward compatibility with v1 sketch/drawing flows. */
   claudeApiKey: string
+  /** Gemini (Google AI Studio) key — used by the new default provider. */
+  geminiApiKey: string
+  /** OpenAI key — wired, provider stub not yet implemented. */
+  openaiApiKey: string
+  /** Kimi (Moonshot) key — wired, provider stub not yet implemented. */
+  kimiApiKey: string
+  /** Which provider the Creative Partner talks to. */
+  aiProvider: AIProviderId
+  /** Master switch for all AI surfaces. When false, the Partner tab is hidden. */
+  aiEnabled: boolean
 }
 
 // ─── Store shapes ────────────────────────────────────────────────
