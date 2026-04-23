@@ -5,67 +5,51 @@ interface SpreadThumbnailProps {
   onClick: () => void
 }
 
+/**
+ * Storyboard thumbnail. Every spread — cover, middle, or end — renders
+ * in the same frame (same aspect, same blank-page background) so the
+ * grid reads as a uniform storyboard sheet. Content differentiates by:
+ *   • a small corner label ("Cover" / "pp. 4–5" / "End")
+ *   • if a sketch exists, that sketch fills the entire spread
+ */
 export function SpreadThumbnail({ spread, onClick }: SpreadThumbnailProps) {
-  const isCover = spread.pageLabel === 'Cover'
-  const isEnd = spread.pageLabel === 'End'
   const sketches = spread.sketches ?? []
   const latestSketch = sketches.length > 0 ? sketches[sketches.length - 1] : null
   const olderSketches = sketches.slice(0, -1)
-  // Parse page numbers directly from the label (e.g. "pp. 4–5" → "4", "5")
-  const pageMatch = spread.pageLabel.match(/pp\. (\d+)–(\d+)/)
-  const leftPage = pageMatch ? pageMatch[1] : ''
-  const rightPage = pageMatch ? pageMatch[2] : ''
 
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-center gap-1.5 focus:outline-none"
+      className="group flex flex-col items-center gap-1.5 focus:outline-none w-full"
     >
-      {/* Spread double-page rectangle */}
-      <div className="relative w-full aspect-[2/1.4] rounded border-2 border-cream-300 bg-cream-200 overflow-hidden transition-all duration-150 group-hover:border-ochre-400 group-hover:shadow-medium">
+      {/* Uniform double-page rectangle — same size for every spread */}
+      <div className="relative w-full aspect-[2/1.4] rounded border-2 border-cream-300 bg-cream-50 overflow-hidden transition-all duration-150 group-hover:border-ochre-400 group-hover:shadow-medium">
 
-        {/* Original left/spine/right layout — unchanged, provides sizing */}
+        {/* Blank-page base: left page, spine, right page — always rendered
+            so the box geometry is identical across all spread types */}
         <div className="flex h-full">
-          {/* Left page */}
-          <div className="flex-1 relative overflow-hidden">
-            {latestSketch ? (
-              /* Render sketch here so flex h-full resolves correctly */
-              <img src={latestSketch.imageDataUrl} alt="" className="w-full h-full object-cover" />
-            ) : spread.sceneImageDataUrl ? (
-              <img src={spread.sceneImageDataUrl} alt="" className="w-full h-full object-cover" />
-            ) : isCover || isEnd ? (
-              <div className="flex items-center justify-center w-full h-full">
-                <svg viewBox="0 0 40 28" className="w-3/4 h-3/4 text-cream-300">
-                  <rect x="1" y="1" width="38" height="26" rx="1" fill="none" stroke="currentColor" strokeWidth="1" />
-                  <line x1="1" y1="1" x2="39" y2="27" stroke="currentColor" strokeWidth="1" />
-                  <line x1="39" y1="1" x2="1" y2="27" stroke="currentColor" strokeWidth="1" />
-                </svg>
-              </div>
-            ) : (
-              <div className="p-1 flex flex-col justify-between h-full overflow-hidden">
-                {leftPage && (
-                  <span className="font-sans text-[7px] text-ink-500/30 leading-none">{leftPage}</span>
-                )}
-                {spread.manuscriptText && (
-                  <p className="font-serif text-[6px] text-ink-500/60 leading-tight line-clamp-4 mt-0.5">
-                    {spread.manuscriptText}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-          {/* Spine */}
-          <div className="w-px bg-cream-300 shrink-0" />
-          {/* Right page */}
-          <PageHalf
-            imageUrl={null}
-            text={isCover ? '' : isEnd ? '' : spread.artNotes.scene}
-            label={isCover ? '' : isEnd ? '' : rightPage}
-            isSpecial={false}
-          />
+          <div className="flex-1 relative" />
+          <div className="w-px bg-cream-300/70 shrink-0" />
+          <div className="flex-1 relative" />
         </div>
 
-        {/* Sketch full-spread overlay — covers both pages */}
+        {/* Corner label — only visible when no sketch covers the spread */}
+        {!latestSketch && (
+          <span className="absolute top-1 left-1.5 font-sans text-[8px] text-ink-500/35 leading-none pointer-events-none">
+            {spread.pageLabel}
+          </span>
+        )}
+
+        {/* Optional scene reference (non-sketch seed image) */}
+        {!latestSketch && spread.sceneImageDataUrl && (
+          <img
+            src={spread.sceneImageDataUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+          />
+        )}
+
+        {/* Sketch overlay — covers both pages when present */}
         {latestSketch && (
           <div className="absolute inset-0">
             {olderSketches.slice(-2).map((sk, i) => (
@@ -93,52 +77,10 @@ export function SpreadThumbnail({ spread, onClick }: SpreadThumbnailProps) {
 
       </div>
 
-      {/* Page number label below */}
+      {/* Page label below the card (always visible) */}
       <p className="font-sans text-[9px] text-ink-500/50 leading-none">
         {spread.pageLabel}
       </p>
     </button>
-  )
-}
-
-interface PageHalfProps {
-  imageUrl: string | null
-  text: string
-  label: string
-  isSpecial: boolean
-}
-
-function PageHalf({ imageUrl, text, label, isSpecial }: PageHalfProps) {
-  if (imageUrl) {
-    return (
-      <div className="flex-1 relative overflow-hidden">
-        <img src={imageUrl} alt="" className="w-full h-full object-cover" />
-      </div>
-    )
-  }
-
-  if (isSpecial) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <svg viewBox="0 0 40 28" className="w-3/4 h-3/4 text-cream-300">
-          <rect x="1" y="1" width="38" height="26" rx="1" fill="none" stroke="currentColor" strokeWidth="1" />
-          <line x1="1" y1="1" x2="39" y2="27" stroke="currentColor" strokeWidth="1" />
-          <line x1="39" y1="1" x2="1" y2="27" stroke="currentColor" strokeWidth="1" />
-        </svg>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex-1 p-1 flex flex-col justify-between overflow-hidden">
-      {label && (
-        <span className="font-sans text-[7px] text-ink-500/30 leading-none">{label}</span>
-      )}
-      {text && (
-        <p className="font-serif text-[6px] text-ink-500/60 leading-tight line-clamp-4 mt-0.5">
-          {text}
-        </p>
-      )}
-    </div>
   )
 }

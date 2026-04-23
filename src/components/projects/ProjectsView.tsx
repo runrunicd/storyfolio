@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useProjectStore, useAppStore } from '@/store'
+import { NewBookModal } from '@/modals/NewBookModal'
 import type { Project } from '@/types'
 
 // ─── Book-spine palette ──────────────────────────────────────────
@@ -230,6 +231,7 @@ export function ProjectsView() {
   const { projects, addProject, deleteProject } = useProjectStore()
   const { setActiveProjectId, setActiveView, openSettings } = useAppStore()
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [newBookOpen, setNewBookOpen] = useState(false)
 
   const openProject = (id: string) => {
     setActiveProjectId(id)
@@ -237,8 +239,12 @@ export function ProjectsView() {
     setActiveView('dream')
   }
 
-  const handleNew = () => {
-    const id = addProject('Untitled Story')
+  // New-book flow: show the template picker, then create + navigate on confirm.
+  const handleNew = () => setNewBookOpen(true)
+
+  const handleNewConfirm = (template: { spreadCount: number }, title: string) => {
+    setNewBookOpen(false)
+    const id = addProject(title, template.spreadCount)
     useProjectStore.getState().setActiveProject(id)
     setActiveProjectId(id)
     setActiveView('dream')
@@ -322,6 +328,13 @@ export function ProjectsView() {
             : '— storyfolio holds your books privately, in this browser. nothing leaves your device unless you export it. —'}
         </p>
       </div>
+
+      {/* Template picker */}
+      <NewBookModal
+        isOpen={newBookOpen}
+        onClose={() => setNewBookOpen(false)}
+        onConfirm={handleNewConfirm}
+      />
     </div>
   )
 }

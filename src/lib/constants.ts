@@ -11,7 +11,7 @@ import type {
 
 // ─── Story Flow helpers ──────────────────────────────────────────
 
-function makePageLabel(spreadNumber: number, total: number = 17): string {
+function makePageLabel(spreadNumber: number, total: number): string {
   if (spreadNumber === 1) return 'Cover'
   if (spreadNumber === total) return 'End'
   if (spreadNumber === 2) return 'pp. 1–3'       // front matter (blank)
@@ -19,11 +19,11 @@ function makePageLabel(spreadNumber: number, total: number = 17): string {
   return `pp. ${left}–${left + 1}`
 }
 
-export function makeEmptySpread(spreadNumber: number): StorySpread {
+export function makeEmptySpread(spreadNumber: number, total: number = 17): StorySpread {
   return {
     id: uuidv4(),
     spreadNumber,
-    pageLabel: makePageLabel(spreadNumber),
+    pageLabel: makePageLabel(spreadNumber, total),
     plotBeat: '',
     manuscriptText: '',
     artNotes: { characters: '', scene: '', designNotes: '', keyWords: '' },
@@ -35,14 +35,49 @@ export function makeEmptySpread(spreadNumber: number): StorySpread {
   }
 }
 
-export function makeEmptyStoryFlow(): StorySpread[] {
-  return Array.from({ length: 17 }, (_, i) => makeEmptySpread(i + 1))
+/**
+ * Generate a fresh story flow of `spreadCount` spreads.
+ * Spread 1 is always Cover, last spread is End, in between are
+ * front matter + content pages. Default 17 = standard 32-page book.
+ */
+export function makeEmptyStoryFlow(spreadCount: number = 17): StorySpread[] {
+  return Array.from({ length: spreadCount }, (_, i) => makeEmptySpread(i + 1, spreadCount))
+}
+
+// ─── Picture book templates ──────────────────────────────────────
+//
+// Picture books are almost always printed in page counts divisible by
+// 8 (printing signatures). These four cover the overwhelming majority
+// of trade picture books. "Standard" (32 pages) is the industry default.
+
+export interface BookTemplate {
+  id: string
+  pageCount: number
+  spreadCount: number
+  name: string
+  description: string
+}
+
+export const BOOK_TEMPLATES: BookTemplate[] = [
+  { id: '24pg', pageCount: 24, spreadCount: 13, name: '24-page book',  description: 'Board books and early readers' },
+  { id: '32pg', pageCount: 32, spreadCount: 17, name: '32-page book',  description: 'Standard picture book (most common)' },
+  { id: '40pg', pageCount: 40, spreadCount: 21, name: '40-page book',  description: 'Longer narrative picture books' },
+  { id: '48pg', pageCount: 48, spreadCount: 25, name: '48-page book',  description: 'Extra-long, illustration-rich stories' },
+]
+
+export const DEFAULT_TEMPLATE_ID = '32pg'
+
+export function templateById(id: string): BookTemplate {
+  return BOOK_TEMPLATES.find((t) => t.id === id) ?? BOOK_TEMPLATES[1]
 }
 
 // ─── New project factory ─────────────────────────────────────────
 
-export function createNewProject(title: string = 'Untitled Story'): Project {
-  const flow = makeEmptyStoryFlow()
+export function createNewProject(
+  title: string = 'Untitled Story',
+  spreadCount: number = 17,
+): Project {
+  const flow = makeEmptyStoryFlow(spreadCount)
   // Cover spread gets the project title
   flow[0] = { ...flow[0], manuscriptText: title }
   return {

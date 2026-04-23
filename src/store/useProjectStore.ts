@@ -41,7 +41,7 @@ interface ProjectStore {
   sampleProjectRemoved?: boolean
 
   // Project management
-  addProject: (title?: string) => string         // returns new project id
+  addProject: (title?: string, spreadCount?: number) => string  // returns new project id
   duplicateProject: (id: string) => void
   deleteProject: (id: string) => void
   setActiveProject: (id: string | null) => void
@@ -116,8 +116,8 @@ export const useProjectStore = create<ProjectStore>()(
       sampleProjectRemoved: false,
 
       // ── Project management ────────────────────────────────────
-      addProject: (title = 'Untitled Story') => {
-        const project = createNewProject(title)
+      addProject: (title = 'Untitled Story', spreadCount = 17) => {
+        const project = createNewProject(title, spreadCount)
         set((s) => ({ projects: [...s.projects, project] }))
         return project.id
       },
