@@ -305,23 +305,17 @@ export function ProjectsView() {
         </div>
       </div>
 
-      {/* Bookshelf */}
+      {/* Bookshelf — multiple rows when the collection grows past one row,
+          each row rendered as its own wooden shelf. */}
       <div className="px-10 max-w-6xl mx-auto">
         {hasBooks ? (
-          <Shelf>
-            <div className="flex items-end gap-3 flex-wrap">
-              {sorted.map((project) => (
-                <BookSpine
-                  key={project.id}
-                  project={project}
-                  onOpen={() => openProject(project.id)}
-                  onRequestDelete={(e) => handleDelete(e, project.id)}
-                  isConfirmingDelete={confirmDelete === project.id}
-                />
-              ))}
-              <NewBookSlot onClick={handleNew} label="Start a new book" />
-            </div>
-          </Shelf>
+          <Bookcase
+            books={sorted}
+            openProject={openProject}
+            handleDelete={handleDelete}
+            confirmDelete={confirmDelete}
+            onNew={handleNew}
+          />
         ) : (
           <EmptyShelf onStart={handleNew} />
         )}
@@ -345,6 +339,63 @@ export function ProjectsView() {
         onClose={() => setNewBookOpen(false)}
         onConfirm={handleNewConfirm}
       />
+    </div>
+  )
+}
+
+// ─── Bookcase ───────────────────────────────────────────────────
+// When the collection grows beyond one shelf, split into multiple
+// honey-wood shelves stacked vertically — like a real bookcase.
+// BOOKS_PER_SHELF is a deliberate fixed count rather than
+// layout-detected so each shelf's shelf-plank renders correctly
+// underneath exactly the books that sit on it.
+const BOOKS_PER_SHELF = 12
+
+function Bookcase({
+  books,
+  openProject,
+  handleDelete,
+  confirmDelete,
+  onNew,
+}: {
+  books: Project[]
+  openProject: (id: string) => void
+  handleDelete: (e: React.MouseEvent, id: string) => void
+  confirmDelete: string | null
+  onNew: () => void
+}) {
+  // Build items = [books..., newSlotSentinel], then chunk by BOOKS_PER_SHELF.
+  type Row = Array<{ kind: 'book'; project: Project } | { kind: 'new' }>
+  const rows: Row[] = []
+  const items: Row = [
+    ...books.map((p) => ({ kind: 'book' as const, project: p })),
+    { kind: 'new' as const },
+  ]
+  for (let i = 0; i < items.length; i += BOOKS_PER_SHELF) {
+    rows.push(items.slice(i, i + BOOKS_PER_SHELF))
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      {rows.map((row, i) => (
+        <Shelf key={i}>
+          <div className="flex items-end gap-3">
+            {row.map((item, j) =>
+              item.kind === 'book' ? (
+                <BookSpine
+                  key={item.project.id}
+                  project={item.project}
+                  onOpen={() => openProject(item.project.id)}
+                  onRequestDelete={(e) => handleDelete(e, item.project.id)}
+                  isConfirmingDelete={confirmDelete === item.project.id}
+                />
+              ) : (
+                <NewBookSlot key={`new-${j}`} onClick={onNew} label="Start a new book" />
+              ),
+            )}
+          </div>
+        </Shelf>
+      ))}
     </div>
   )
 }
