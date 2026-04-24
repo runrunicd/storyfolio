@@ -7,6 +7,8 @@ interface AppStore extends AppState {
   setActiveProjectId: (id: string | null) => void
   openSettings: () => void
   closeSettings: () => void
+  openFeedback: () => void
+  closeFeedback: () => void
   setApiKey: (key: string) => void
   setProviderKey: (provider: AIProviderId, key: string) => void
   setAiProvider: (provider: AIProviderId) => void
@@ -28,12 +30,15 @@ export const useAppStore = create<AppStore>()(
       activeView: 'dream' as ViewId,
       activeProjectId: null,
       isSettingsOpen: false,
+      isFeedbackOpen: false,
       settings: DEFAULT_SETTINGS,
 
       setActiveView: (view) => set({ activeView: view }),
       setActiveProjectId: (id) => set({ activeProjectId: id }),
       openSettings: () => set({ isSettingsOpen: true }),
       closeSettings: () => set({ isSettingsOpen: false }),
+      openFeedback: () => set({ isFeedbackOpen: true }),
+      closeFeedback: () => set({ isFeedbackOpen: false }),
 
       // Legacy single-key setter — now maps to Claude key so existing Settings UI keeps working.
       setApiKey: (key) => set((s) => ({ settings: { ...s.settings, claudeApiKey: key } })),

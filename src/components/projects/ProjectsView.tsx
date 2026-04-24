@@ -326,11 +326,16 @@ export function ProjectsView() {
       {/* Footer — handwritten note, helps make the empty shelf feel less like a 404 */}
       <div className="max-w-6xl mx-auto px-10 mt-12 pb-16">
         <p
-          className="text-ink-500/45 text-sm italic"
+          className={[
+            'italic',
+            hasBooks
+              ? 'text-ink-500/55 text-xl leading-relaxed'
+              : 'text-ink-500/45 text-sm',
+          ].join(' ')}
           style={{ fontFamily: "'Caveat', 'Lora', cursive" }}
         >
           {hasBooks
-            ? '— your books. click a spine to keep working. —'
+            ? '— Tell the story only you can. click a spine to keep working. —'
             : '— storyfolio holds your books privately, in this browser. nothing leaves your device unless you export it. —'}
         </p>
       </div>

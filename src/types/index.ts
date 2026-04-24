@@ -219,5 +219,6 @@ export interface AppState {
   activeView: ViewId
   activeProjectId: string | null
   isSettingsOpen: boolean
+  isFeedbackOpen: boolean
   settings: AppSettings
 }

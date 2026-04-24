@@ -8,13 +8,54 @@ const MARGIN = 1
 const USABLE_W = PAGE_W - MARGIN * 2  // 6.5 in
 const FOOTER_Y = PAGE_H - 0.5
 
+// Free-tier marketing footer. The phrase is rendered as a clickable link
+// pointing to storyfolio.co (works in any digital PDF viewer) — dropped
+// the `· storyfolio.co` suffix because the link carries that already.
+// When Pro ships (PRO_PLAN.md), pass `{ proUnlocked: true }` to suppress.
+const MADE_WITH = 'Made with Storyfolio'
+const MADE_WITH_URL = 'https://storyfolio.co'
+
+export interface ExportOptions {
+  /** When true, suppresses the "Made with Storyfolio" free-tier footer.
+   *  Pro users get a clean, submission-ready PDF without the mark. */
+  proUnlocked?: boolean
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────
 
-function addFooter(doc: jsPDF, pageNum: number) {
+/** Draws the "Made with Storyfolio" linked caption, horizontally centered
+ *  at (cx, y). Split into doc.text() + doc.link() for maximum jsPDF
+ *  compatibility — textWithLink sometimes mispositions the link rectangle
+ *  relative to the rendered text. Measuring manually and creating a link
+ *  annotation over the exact text bounds is more reliable. */
+function drawMadeWith(doc: jsPDF, cx: number, y: number) {
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(8)
+  // Darker beige-grey so the mark reads legibly on white at 8pt without
+  // competing with the page number above it.
+  doc.setTextColor(130, 120, 100)
+  const textWidth = doc.getTextWidth(MADE_WITH)
+  const x = cx - textWidth / 2
+  doc.text(MADE_WITH, x, y)
+  // Link rectangle — slightly taller than the text to give an easy click
+  // target; origin is top-left so we subtract ~font-height to overlay the
+  // glyphs themselves rather than the baseline.
+  const lineH = 0.13
+  doc.link(x, y - lineH + 0.03, textWidth, lineH, { url: MADE_WITH_URL })
+}
+
+function addFooter(doc: jsPDF, pageNum: number, opts: ExportOptions = {}) {
+  // Page number — centered, slightly higher to leave room for the mark below.
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(160, 140, 120)
   doc.text(String(pageNum), PAGE_W / 2, FOOTER_Y, { align: 'center' })
+
+  // "Made with Storyfolio" — free-tier only, clickable link to storyfolio.co.
+  if (!opts.proUnlocked) {
+    drawMadeWith(doc, PAGE_W / 2, FOOTER_Y + 0.18)
+  }
+
   doc.setTextColor(0, 0, 0)
 }
 
@@ -27,7 +68,8 @@ function writeText(
   maxWidth: number,
   fontSize: number,
   style: 'normal' | 'bold' | 'italic',
-  pageNum: { n: number }
+  pageNum: { n: number },
+  opts: ExportOptions = {}
 ): number {
   doc.setFont('helvetica', style)
   doc.setFontSize(fontSize)
@@ -35,7 +77,7 @@ function writeText(
   const lineH = fontSize / 72 * 1.45
   for (const line of lines) {
     if (y + lineH > PAGE_H - MARGIN) {
-      addFooter(doc, pageNum.n)
+      addFooter(doc, pageNum.n, opts)
       doc.addPage()
       pageNum.n++
       y = MARGIN
@@ -58,7 +100,7 @@ function publishSpreads(project: Project): StorySpread[] {
 
 // ─── Builders (return doc — do not save) ─────────────────────────
 
-export function buildManuscript2(project: Project): { doc: jsPDF; filename: string } {
+export function buildManuscript2(project: Project, opts: ExportOptions = {}): { doc: jsPDF; filename: string } {
   const doc = new jsPDF({ unit: 'in', format: 'letter' })
   const pn = { n: 1 }
 
@@ -68,23 +110,23 @@ export function buildManuscript2(project: Project): { doc: jsPDF; filename: stri
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(11)
   doc.text('Manuscript', PAGE_W / 2, PAGE_H / 2 + 0.3, { align: 'center' })
-  addFooter(doc, pn.n)
+  addFooter(doc, pn.n, opts)
 
   const spreads = publishSpreads(project).filter((s) => s.manuscriptText.trim())
   for (const spread of spreads) {
     doc.addPage()
     pn.n++
     let y = MARGIN
-    y = writeText(doc, spread.pageLabel, MARGIN, y, USABLE_W, 9, 'italic', pn)
+    y = writeText(doc, spread.pageLabel, MARGIN, y, USABLE_W, 9, 'italic', pn, opts)
     y += 0.08
-    writeText(doc, spread.manuscriptText, MARGIN, y, USABLE_W, 12, 'normal', pn)
-    addFooter(doc, pn.n)
+    writeText(doc, spread.manuscriptText, MARGIN, y, USABLE_W, 12, 'normal', pn, opts)
+    addFooter(doc, pn.n, opts)
   }
 
   return { doc, filename: `${safeName(project.title)}-manuscript.pdf` }
 }
 
-export function buildManuscript1(project: Project): { doc: jsPDF; filename: string } {
+export function buildManuscript1(project: Project, opts: ExportOptions = {}): { doc: jsPDF; filename: string } {
   const doc = new jsPDF({ unit: 'in', format: 'letter' })
   const pn = { n: 1 }
 
@@ -94,7 +136,7 @@ export function buildManuscript1(project: Project): { doc: jsPDF; filename: stri
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(11)
   doc.text('Manuscript with Art Notes', PAGE_W / 2, PAGE_H / 2 + 0.3, { align: 'center' })
-  addFooter(doc, pn.n)
+  addFooter(doc, pn.n, opts)
 
   const spreads = publishSpreads(project).filter(
     (s) => s.manuscriptText.trim() || Object.values(s.artNotes).some(Boolean)
@@ -104,10 +146,10 @@ export function buildManuscript1(project: Project): { doc: jsPDF; filename: stri
     doc.addPage()
     pn.n++
     let y = MARGIN
-    y = writeText(doc, spread.pageLabel, MARGIN, y, USABLE_W, 9, 'italic', pn)
+    y = writeText(doc, spread.pageLabel, MARGIN, y, USABLE_W, 9, 'italic', pn, opts)
     y += 0.08
     if (spread.manuscriptText.trim()) {
-      y = writeText(doc, spread.manuscriptText, MARGIN, y, USABLE_W, 12, 'normal', pn)
+      y = writeText(doc, spread.manuscriptText, MARGIN, y, USABLE_W, 12, 'normal', pn, opts)
       y += 0.18
     }
     const artFields: Array<{ label: string; value: string }> = [
@@ -117,22 +159,22 @@ export function buildManuscript1(project: Project): { doc: jsPDF; filename: stri
     ]
     for (const { label, value } of artFields) {
       if (!value.trim()) continue
-      y = writeText(doc, `${label}:`, MARGIN, y, USABLE_W, 8, 'bold', pn)
-      y = writeText(doc, value, MARGIN + 0.15, y - 0.02, USABLE_W - 0.15, 9, 'italic', pn)
+      y = writeText(doc, `${label}:`, MARGIN, y, USABLE_W, 8, 'bold', pn, opts)
+      y = writeText(doc, value, MARGIN + 0.15, y - 0.02, USABLE_W - 0.15, 9, 'italic', pn, opts)
       y += 0.06
     }
-    addFooter(doc, pn.n)
+    addFooter(doc, pn.n, opts)
   }
 
   return { doc, filename: `${safeName(project.title)}-manuscript-with-art-notes.pdf` }
 }
 
-export function buildStatement(project: Project): { doc: jsPDF; filename: string } {
+export function buildStatement(project: Project, opts: ExportOptions = {}): { doc: jsPDF; filename: string } {
   const doc = new jsPDF({ unit: 'in', format: 'letter' })
   const pn = { n: 1 }
   let y = MARGIN
 
-  y = writeText(doc, project.title, MARGIN, y, USABLE_W, 20, 'bold', pn)
+  y = writeText(doc, project.title, MARGIN, y, USABLE_W, 20, 'bold', pn, opts)
   y += 0.12
   doc.setDrawColor(180, 160, 130)
   doc.line(MARGIN, y, MARGIN + USABLE_W, y)
@@ -146,13 +188,13 @@ export function buildStatement(project: Project): { doc: jsPDF; filename: string
   ]
   for (const { label, value } of sections) {
     if (!value.trim()) continue
-    y = writeText(doc, label, MARGIN, y, USABLE_W, 10, 'bold', pn)
+    y = writeText(doc, label, MARGIN, y, USABLE_W, 10, 'bold', pn, opts)
     y += 0.02
-    y = writeText(doc, value, MARGIN, y, USABLE_W, 11, 'normal', pn)
+    y = writeText(doc, value, MARGIN, y, USABLE_W, 11, 'normal', pn, opts)
     y += 0.22
   }
 
-  addFooter(doc, pn.n)
+  addFooter(doc, pn.n, opts)
   return { doc, filename: `${safeName(project.title)}-statement.pdf` }
 }
 
@@ -160,7 +202,7 @@ function imgFormat(dataUrl: string): string {
   return dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG'
 }
 
-export function buildBookDummy(project: Project): { doc: jsPDF; filename: string } {
+export function buildBookDummy(project: Project, opts: ExportOptions = {}): { doc: jsPDF; filename: string } {
   // Landscape letter: 11" × 8.5"
   const doc = new jsPDF({ unit: 'in', format: 'letter', orientation: 'landscape' })
   const pn = { n: 1 }
@@ -176,6 +218,14 @@ export function buildBookDummy(project: Project): { doc: jsPDF; filename: string
     doc.setFontSize(8)
     doc.setTextColor(160, 140, 120)
     doc.text(String(pageNum), LW / 2, LFOOTER_Y, { align: 'center' })
+
+    // Free-tier "Made with Storyfolio" mark — the book dummy is what
+    // authors share with critique groups, so this is the single highest-
+    // leverage marketing surface in the app. Rendered as a live link.
+    if (!opts.proUnlocked) {
+      drawMadeWith(doc, LW / 2, LFOOTER_Y + 0.18)
+    }
+
     doc.setTextColor(0, 0, 0)
   }
 
@@ -278,22 +328,22 @@ export function buildBookDummy(project: Project): { doc: jsPDF; filename: string
 
 // ─── Convenience wrappers (direct download) ──────────────────────
 
-export function exportManuscript2(project: Project): void {
-  const { doc, filename } = buildManuscript2(project)
+export function exportManuscript2(project: Project, opts: ExportOptions = {}): void {
+  const { doc, filename } = buildManuscript2(project, opts)
   doc.save(filename)
 }
 
-export function exportManuscript1(project: Project): void {
-  const { doc, filename } = buildManuscript1(project)
+export function exportManuscript1(project: Project, opts: ExportOptions = {}): void {
+  const { doc, filename } = buildManuscript1(project, opts)
   doc.save(filename)
 }
 
-export function exportStatement(project: Project): void {
-  const { doc, filename } = buildStatement(project)
+export function exportStatement(project: Project, opts: ExportOptions = {}): void {
+  const { doc, filename } = buildStatement(project, opts)
   doc.save(filename)
 }
 
-export function exportBookDummy(project: Project): void {
-  const { doc, filename } = buildBookDummy(project)
+export function exportBookDummy(project: Project, opts: ExportOptions = {}): void {
+  const { doc, filename } = buildBookDummy(project, opts)
   doc.save(filename)
 }

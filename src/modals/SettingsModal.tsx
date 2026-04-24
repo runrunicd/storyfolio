@@ -31,6 +31,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const setAiEnabled  = useAppStore((s) => s.setAiEnabled)
   const setAiProvider = useAppStore((s) => s.setAiProvider)
   const setProviderKey = useAppStore((s) => s.setProviderKey)
+  const openFeedback = useAppStore((s) => s.openFeedback)
 
   const activeProvider: ProviderId = settings.aiProvider ?? 'gemini'
 
@@ -156,6 +157,26 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             Images are stored as base64 in your browser. Large images may approach storage limits.
             We recommend resizing to under 1200 px before uploading.
           </p>
+        </section>
+
+        <hr className="border-cream-300" />
+
+        {/* ── Feedback ─────────────────────────────────────── */}
+        <section>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-serif text-base text-ink-700 mb-1">Send feedback</h3>
+              <p className="font-sans text-xs text-ink-500/60 leading-relaxed">
+                Share a thought, bug, or wish. Goes straight to the maker.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => { onClose(); openFeedback() }}
+            >
+              Write a note
+            </Button>
+          </div>
         </section>
 
         <hr className="border-cream-300" />

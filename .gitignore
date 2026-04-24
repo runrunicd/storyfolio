@@ -45,3 +45,5 @@ app-example
 # Local cowork / agent state
 .claude/
 .agents/
+storyfolio-app-dist.zip
+*.zip

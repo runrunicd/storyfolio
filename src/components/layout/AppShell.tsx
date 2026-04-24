@@ -7,6 +7,7 @@ import { DrawView } from '@/components/draw/DrawView'
 import { PublishView } from '@/components/publish/PublishView'
 import { PartnerView } from '@/components/partner/PartnerView'
 import { SettingsModal } from '@/modals/SettingsModal'
+import { FeedbackModal } from '@/modals/FeedbackModal'
 import type { ViewId } from '@/types'
 import type { ComponentType } from 'react'
 
@@ -47,6 +48,8 @@ export function AppShell() {
   const aiEnabled = useAppStore((s) => s.settings.aiEnabled)
   const isSettingsOpen = useAppStore((s) => s.isSettingsOpen)
   const closeSettings = useAppStore((s) => s.closeSettings)
+  const isFeedbackOpen = useAppStore((s) => s.isFeedbackOpen)
+  const closeFeedback = useAppStore((s) => s.closeFeedback)
   const activeProjectId = useProjectStore((s) => s.activeProjectId)
 
   // Guard: if the user had Partner selected and then disabled AI, fall back to Story.
@@ -78,6 +81,7 @@ export function AppShell() {
         </main>
       )}
       <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={closeFeedback} />
     </div>
   )
 }

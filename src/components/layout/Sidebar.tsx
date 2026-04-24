@@ -23,6 +23,7 @@ export function Sidebar() {
   const setActiveView = useAppStore((s) => s.setActiveView)
   const setActiveProjectId = useAppStore((s) => s.setActiveProjectId)
   const openSettings = useAppStore((s) => s.openSettings)
+  const openFeedback = useAppStore((s) => s.openFeedback)
   const aiEnabled = useAppStore((s) => s.settings.aiEnabled)
   const project = useActiveProject()
 
@@ -109,6 +110,16 @@ export function Sidebar() {
           )}
         </button>
       </nav>
+
+      {/* Feedback */}
+      <button
+        onClick={openFeedback}
+        title="Send feedback"
+        className="w-12 h-10 rounded-xl flex flex-col items-center justify-center gap-0.5 text-ink-500/35 hover:bg-cream-100/70 hover:text-ink-700 transition-colors"
+      >
+        <span className="text-base leading-none">✉</span>
+        <span className="text-[9px] font-sans font-medium leading-none">Feedback</span>
+      </button>
 
       {/* Settings */}
       <button
